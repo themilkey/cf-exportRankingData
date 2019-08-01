@@ -52,4 +52,31 @@ exports.exportRankingData = functions.storage.object().onFinalize(async (object)
 		});
 	});
 });
-// [END generateThumbnail]
+
+exports.getRanking = functions.https.onRequest((request, response) => {
+	const db = admin.firestore();
+	var tasks = [];
+	var ids = [];
+	var ranking = {"Kda":{}, "Dpm":{}, "Kp":{}};
+	var counter = 0;
+	Object.keys(ranking).forEach(id => {
+		tasks.push(db.collection('average').orderBy(id, 'desc').limit(Number(request.query.limit)).get());
+		ids.push(id);
+	})
+	
+	Promise.all(tasks).then((snapshot) => {
+		snapshot.forEach((documents, index) => {
+			var top = {};
+			documents.forEach(function(doc) {
+				top[doc.id] = doc.get(ids[index]);
+			});
+			ranking[ids[index]] = top
+		});
+	})
+	.then(() => {
+		response.json(ranking);
+	})
+	.catch((err) => {
+		response.status(403).json({"error": err})
+	});
+});
