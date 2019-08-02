@@ -21,6 +21,8 @@ exports.exportRankingData = functions.storage.object().onFinalize(async (object)
 		data.participants.forEach(function(p, i) {
 			var summonerName = data.participantIdentities[i].player.summonerName
 				var player = { [summonerName] : {
+					"championId": p.championId,
+					"win": (data.teams[Math.floor(i / 5)].win == "Win") ? true : false,
 					"gameId": data.gameId,
 					"side": p.teamId,
 					"kills": p.stats.kills,
@@ -32,7 +34,6 @@ exports.exportRankingData = functions.storage.object().onFinalize(async (object)
 			}
 			if (player[summonerName].side == 100) {bk += player[summonerName].kills;} else {rk += player[summonerName].kills;}
 			database.push(player);
-		
 		});
 		database.forEach(p => {
 			var key; for (var k in p) {key = k;}
@@ -67,8 +68,8 @@ exports.getRanking = functions.https.onRequest((request, response) => {
 	Promise.all(tasks).then((snapshot) => {
 		snapshot.forEach((documents, index) => {
 			var top = {};
-			documents.forEach(function(doc) {
-				top[doc.id] = doc.get(ids[index]);
+			documents.forEach(doc => {
+				top[doc.id] = {"team": doc.get("Team"), "score":doc.get(ids[index])};
 			});
 			ranking[ids[index]] = top
 		});
@@ -80,3 +81,4 @@ exports.getRanking = functions.https.onRequest((request, response) => {
 		response.status(403).json({"error": err})
 	});
 });
+
