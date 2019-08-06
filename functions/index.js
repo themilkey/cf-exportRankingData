@@ -55,6 +55,7 @@ exports.exportRankingData = functions.storage.object().onFinalize(async (object)
 });
 
 exports.getRanking = functions.https.onRequest((request, response) => {
+	response.set('Access-Control-Allow-Origin', '*');
 	const db = admin.firestore();
 	var tasks = [];
 	var ids = [];
