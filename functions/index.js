@@ -1,12 +1,10 @@
-// [START import]
 const functions = require('firebase-functions');
 const admin = require('firebase-admin');
 admin.initializeApp()
-// [END import]
 
 exports.exportRankingData = functions.storage.object().onFinalize(async (object) => {
-	const fileBucket = object.bucket; // The Storage bucket that contains the file.
-	const filePath = object.name; // File path in the bucket.
+	const fileBucket = object.bucket;
+	const filePath = object.name;
 	var database = [];
 
 	if (!filePath.endsWith('MatchDto.json')) {
@@ -14,15 +12,15 @@ exports.exportRankingData = functions.storage.object().onFinalize(async (object)
 	}
 
 	const bucket = admin.storage().bucket(fileBucket);
-	bucket.file(filePath).download().then(function(data) {
-		var data = JSON.parse(data[0].toString());
+	bucket.file(filePath).download().then((data) => {
+		data = JSON.parse(data[0].toString());
 		console.log('gameId is ', data.gameId)
 		var bk = 0, rk = 0;
-		data.participants.forEach(function(p, i) {
+		data.participants.forEach((p, i) => {
 			var summonerName = data.participantIdentities[i].player.summonerName
 				var player = { [summonerName] : {
 					"championId": p.championId,
-					"win": (data.teams[Math.floor(i / 5)].win == "Win") ? true : false,
+					"win": (data.teams[Math.floor(i / 5)].win === "Win") ? true : false,
 					"gameId": data.gameId,
 					"side": p.teamId,
 					"kills": p.stats.kills,
@@ -32,13 +30,13 @@ exports.exportRankingData = functions.storage.object().onFinalize(async (object)
 					"kp": 0
 				}
 			}
-			if (player[summonerName].side == 100) {bk += player[summonerName].kills;} else {rk += player[summonerName].kills;}
+			if (player[summonerName].side === 100) {bk += player[summonerName].kills;} else {rk += player[summonerName].kills;}
 			database.push(player);
 		});
 		database.forEach(p => {
 			var key; for (var k in p) {key = k;}
 			var totalkills;
-			if (p[key].side == 100) {totalkills = bk;} else {totalkills = rk;}
+			if (p[key].side === 100) {totalkills = bk;} else {totalkills = rk;}
 			p[key].kp = ((p[key].kills + p[key].assists) / totalkills)*100.0
 		});
 
@@ -51,7 +49,14 @@ exports.exportRankingData = functions.storage.object().onFinalize(async (object)
 			var fields = {[key]: p[summonerName]}
 			admin.firestore().collection('data').doc(summonerName).set(fields, {merge: true});
 		});
+
+		return null;
+	})
+	.catch((err) => {
+		console.log(err);
 	});
+	
+	return null;
 });
 
 exports.getRanking = functions.https.onRequest((request, response) => {
@@ -74,12 +79,15 @@ exports.getRanking = functions.https.onRequest((request, response) => {
 			});
 			ranking[ids[index]] = top
 		});
+
+		return null;
 	})
 	.then(() => {
 		response.json(ranking);
+
+		return null;
 	})
 	.catch((err) => {
 		response.status(403).json({"error": err})
 	});
 });
-
