@@ -20,7 +20,7 @@ exports.exportRankingData = functions.storage.object().onFinalize(async (object)
 			var summonerName = data.participantIdentities[i].player.summonerName
 				var player = { [summonerName] : {
 					"championId": p.championId,
-					"win": (data.teams[Math.floor(i / 5)].win === "Win") ? true : false,
+					"win": (data.teams[Math.floor(p.teamId / 200)].win === "Win") ? true : false,
 					"gameId": data.gameId,
 					"side": p.teamId,
 					"kills": p.stats.kills,
@@ -90,4 +90,40 @@ exports.getRanking = functions.https.onRequest((request, response) => {
 	.catch((err) => {
 		response.status(403).json({"error": err});
 	});
+});
+
+exports.average = functions.firestore.document('data/{summonerName}').onWrite((change, context) => {
+	const summonerName = context.params.summonerName;
+	const document = change.after.exists ? change.after.data() : null;
+
+	console.log('update player average: ', summonerName);
+	var scores = {"assists": [], "deaths": [],"dpm": [],"kills": [],"kp": []}
+	var teamName = "";
+	Object.keys(document).forEach((key, index) => {
+		if (key !== 'team') {
+			scores.assists.push(document[key].assists);
+			scores.deaths.push(document[key].deaths);
+			scores.dpm.push(document[key].dpm);
+			scores.kills.push(document[key].kills);
+			scores.kp.push(document[key].kp);
+		} else {
+			teamName = document[key];
+		}
+	});
+	
+	var average = function(x) {
+		var sum = 0.0;
+		x.forEach((y) => {
+			sum += y;
+		});
+		return sum / x.length;
+	}
+
+	const kda = (average(scores.kills) + average(scores.assists)) / average(scores.deaths);
+	const dpm = average(scores.dpm);
+	const kp = average(scores.kp);
+
+	admin.firestore().collection('average').doc(summonerName).set({"Kda": kda, "Dpm": dpm, "Kp": kp, "Team": teamName}, {merge: true});
+
+	return null;
 });
