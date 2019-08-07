@@ -11,6 +11,8 @@ exports.exportRankingData = functions.storage.object().onFinalize(async (object)
 		return console.log('This is not MatchDto.json');
 	}
 
+	var teamName = filePath.split("/MatchDto.json")[0].split("_");
+
 	const bucket = admin.storage().bucket(fileBucket);
 	bucket.file(filePath).download().then((data) => {
 		data = JSON.parse(data[0].toString());
@@ -44,6 +46,7 @@ exports.exportRankingData = functions.storage.object().onFinalize(async (object)
 			var summonerName;
 			for (var k in p)  {summonerName = k;}
 			var key = p[summonerName].gameId;
+			if (p[summonerName].side == 100) {teamname = teamName[1];} else {teamname = teamName[2];}
 			delete p[summonerName].side;
 			delete p[summonerName].gameId;
 			var fields = {[key]: p[summonerName]};
