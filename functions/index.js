@@ -1,6 +1,6 @@
 const functions = require('firebase-functions');
 const admin = require('firebase-admin');
-admin.initializeApp()
+admin.initializeApp();
 
 exports.exportRankingData = functions.storage.object().onFinalize(async (object) => {
 	const fileBucket = object.bucket;
@@ -14,7 +14,7 @@ exports.exportRankingData = functions.storage.object().onFinalize(async (object)
 	const bucket = admin.storage().bucket(fileBucket);
 	bucket.file(filePath).download().then((data) => {
 		data = JSON.parse(data[0].toString());
-		console.log('gameId is ', data.gameId)
+		console.log('gameId is ', data.gameId);
 		var bk = 0, rk = 0;
 		data.participants.forEach((p, i) => {
 			var summonerName = data.participantIdentities[i].player.summonerName
@@ -29,7 +29,7 @@ exports.exportRankingData = functions.storage.object().onFinalize(async (object)
 					"dpm": p.stats.totalDamageDealtToChampions / (data.gameDuration / 60.0),
 					"kp": 0
 				}
-			}
+			};
 			if (player[summonerName].side === 100) {bk += player[summonerName].kills;} else {rk += player[summonerName].kills;}
 			database.push(player);
 		});
@@ -37,7 +37,7 @@ exports.exportRankingData = functions.storage.object().onFinalize(async (object)
 			var key; for (var k in p) {key = k;}
 			var totalkills;
 			if (p[key].side === 100) {totalkills = bk;} else {totalkills = rk;}
-			p[key].kp = ((p[key].kills + p[key].assists) / totalkills)*100.0
+			p[key].kp = ((p[key].kills + p[key].assists) / totalkills)*100.0;
 		});
 
 		database.forEach(p => {
@@ -46,7 +46,7 @@ exports.exportRankingData = functions.storage.object().onFinalize(async (object)
 			var key = p[summonerName].gameId;
 			delete p[summonerName].side;
 			delete p[summonerName].gameId;
-			var fields = {[key]: p[summonerName]}
+			var fields = {[key]: p[summonerName]};
 			admin.firestore().collection('data').doc(summonerName).set(fields, {merge: true});
 		});
 
@@ -77,8 +77,10 @@ exports.getRanking = functions.https.onRequest((request, response) => {
 			documents.forEach((doc, i) => {
 				top.push({"name": doc.id, "team": doc.get("Team"), "score":doc.get(ids[index])});
 			});
-			ranking[ids[index]] = top
+			ranking[ids[index]] = top;
 		});
+
+		return null
 	})
 	.then(() => {
 		response.json(ranking);
@@ -86,6 +88,6 @@ exports.getRanking = functions.https.onRequest((request, response) => {
 		return null;
 	})
 	.catch((err) => {
-		response.status(403).json({"error": err})
+		response.status(403).json({"error": err});
 	});
 });
