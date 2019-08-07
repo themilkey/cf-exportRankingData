@@ -73,14 +73,12 @@ exports.getRanking = functions.https.onRequest((request, response) => {
 	
 	Promise.all(tasks).then((snapshot) => {
 		snapshot.forEach((documents, index) => {
-			var top = {};
-			documents.forEach(doc => {
-				top[doc.id] = {"team": doc.get("Team"), "score":doc.get(ids[index])};
+			var top = [];
+			documents.forEach((doc, i) => {
+				top.push({"name": doc.id, "team": doc.get("Team"), "score":doc.get(ids[index])});
 			});
 			ranking[ids[index]] = top
 		});
-
-		return null;
 	})
 	.then(() => {
 		response.json(ranking);
